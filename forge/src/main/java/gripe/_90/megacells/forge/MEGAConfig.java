@@ -1,4 +1,4 @@
-package gripe._90.megacells.definition;
+package gripe._90.megacells.forge;
 
 import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.ConfigData;
@@ -8,22 +8,16 @@ import me.shedaniel.autoconfig.serializer.GsonConfigSerializer;
 
 import gripe._90.megacells.MEGACells;
 
-@SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal"})
+@SuppressWarnings({"CanBeFinal", "FieldCanBeLocal", "FieldMayBeFinal"})
 @Config(name = MEGACells.MODID)
 public final class MEGAConfig implements ConfigData {
     @ConfigEntry.Gui.Excluded
     public static MEGAConfig INSTANCE;
 
-    @ConfigEntry.Gui.Tooltip
-    @ConfigEntry.BoundedDiscrete(min = 2, max = 12)
-    private int CompressionChainLimit = 3;
+    private MEGAConfig() {}
 
     @ConfigEntry.Gui.Tooltip
     private boolean AllowSpentWaste = false;
-
-    public int getCompressionChainLimit() {
-        return CompressionChainLimit;
-    }
 
     public boolean isSpentWasteAllowed() {
         return AllowSpentWaste;

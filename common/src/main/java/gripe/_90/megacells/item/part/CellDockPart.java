@@ -6,6 +6,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 
 import org.jetbrains.annotations.Nullable;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -51,7 +53,7 @@ import appeng.util.inv.filter.IAEItemFilter;
 
 import gripe._90.megacells.MEGACells;
 import gripe._90.megacells.definition.MEGAItems;
-import gripe._90.megacells.menu.CellDockMenu;
+import gripe._90.megacells.definition.MEGAMenus;
 
 public class CellDockPart extends AEBasePart
         implements InternalInventoryHost, IChestOrDrive, IPriorityHost, IStorageProvider {
@@ -167,7 +169,7 @@ public class CellDockPart extends AEBasePart
     @Override
     public boolean onPartActivate(Player player, InteractionHand hand, Vec3 pos) {
         if (!player.getCommandSenderWorld().isClientSide()) {
-            MenuOpener.open(CellDockMenu.TYPE, player, MenuLocators.forPart(this));
+            MenuOpener.open(MEGAMenus.CELL_DOCK, player, MenuLocators.forPart(this));
         }
 
         return true;
@@ -292,7 +294,7 @@ public class CellDockPart extends AEBasePart
 
     @Override
     public void returnToMainMenu(Player player, ISubMenu subMenu) {
-        MenuOpener.returnTo(CellDockMenu.TYPE, player, MenuLocators.forPart(this));
+        MenuOpener.returnTo(MEGAMenus.CELL_DOCK, player, MenuLocators.forPart(this));
     }
 
     @Override
@@ -311,11 +313,13 @@ public class CellDockPart extends AEBasePart
         return MODEL;
     }
 
+    @Environment(EnvType.CLIENT)
     @Override
     public boolean requireDynamicRender() {
         return true;
     }
 
+    @Environment(EnvType.CLIENT)
     @Override
     public void renderDynamic(
             float partialTicks,
@@ -327,12 +331,17 @@ public class CellDockPart extends AEBasePart
             return;
         }
 
-        poseStack.pushPose();
-        poseStack.translate(0.5, 0.5, 0.5);
-
         var front = getSide() == Direction.UP || getSide() == Direction.DOWN ? Direction.NORTH : Direction.UP;
         var orientation = BlockOrientation.get(front, getSide());
 
+        var cellModel = MEGACells.Client.PLATFORM.createCellModel(clientCell, orientation);
+
+        if (cellModel == null) {
+            return;
+        }
+
+        poseStack.pushPose();
+        poseStack.translate(0.5, 0.5, 0.5);
         poseStack.mulPose(orientation.getQuaternion());
         poseStack.translate(-3F / 16, 5F / 16, -4F / 16);
 
@@ -341,7 +350,7 @@ public class CellDockPart extends AEBasePart
                 .getModelRenderer()
                 .tesselateBlock(
                         getLevel(),
-                        MEGACells.PLATFORM.createWrappedCellModel(clientCell, orientation),
+                        cellModel,
                         getBlockEntity().getBlockState(),
                         getBlockEntity().getBlockPos(),
                         poseStack,

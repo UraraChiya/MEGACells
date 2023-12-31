@@ -5,7 +5,6 @@ plugins {
     java
     `maven-publish`
     alias(libs.plugins.loom) apply false
-    alias(libs.plugins.vineflower) apply false
     alias(libs.plugins.architectury)
     alias(libs.plugins.shadow)
     alias(libs.plugins.spotless)
@@ -13,7 +12,11 @@ plugins {
 
 val modId: String by project
 val modVersion = (System.getenv("MEGA_VERSION") ?: "v0.0.0").substring(1)
-val minecraftVersion: String = libs.versions.minecraft.get()
+val minecraftVersion = libs.versions.minecraft.get()
+
+val platforms by extra {
+    property("enabledPlatforms").toString().split(',')
+}
 
 tasks {
     register("releaseInfo") {
@@ -37,7 +40,6 @@ subprojects {
     apply(plugin = "java")
     apply(plugin = rootProject.libs.plugins.architectury.get().pluginId)
     apply(plugin = rootProject.libs.plugins.loom.get().pluginId)
-    apply(plugin = rootProject.libs.plugins.vineflower.get().pluginId)
     apply(plugin = rootProject.libs.plugins.spotless.get().pluginId)
 
     base.archivesName.set("$modId-${project.name}")
@@ -76,10 +78,11 @@ subprojects {
         }
 
         maven {
-            name = "CurseMaven"
-            url = uri("https://cursemaven.com")
+            name = "BlameJared"
+            url = uri("https://maven.blamejared.com")
             content {
-                includeGroup("curse.maven")
+                includeGroup("vazkii.botania")
+                includeGroup("vazkii.patchouli")
             }
         }
 
@@ -119,6 +122,11 @@ subprojects {
     }
 
     spotless {
+        kotlinGradle {
+            target("*.kts")
+            diktat()
+        }
+
         java {
             target("src/**/java/**/*.java")
             endWithNewline()
@@ -143,12 +151,14 @@ subprojects {
         json {
             target("src/**/resources/**/*.json")
             targetExclude("src/generated/resources/**")
-            prettier().config(mapOf("parser" to "json"))
+            biome()
+            indentWithSpaces(2)
+            endWithNewline()
         }
     }
 }
 
-for (platform in property("enabledPlatforms").toString().split(',')) {
+for (platform in platforms) {
     project(":$platform") {
         apply(plugin = rootProject.libs.plugins.shadow.get().pluginId)
 

@@ -26,8 +26,12 @@ loom {
     }
 
     forge {
+        mixinConfig("$modId.mixins.json")
         mixinConfig("$modId.forge.mixins.json")
     }
+
+    @Suppress("UnstableApiUsage")
+    mixin.add(sourceSets.main.get(), "$modId.forge.refmap.json")
 }
 
 repositories {
@@ -44,15 +48,6 @@ repositories {
         url = uri("https://maven.shedaniel.me/")
         content {
             includeGroup("me.shedaniel.cloth")
-        }
-    }
-
-    maven {
-        name = "BlameJared"
-        url = uri("https://maven.blamejared.com")
-        content {
-            includeGroup("vazkii.botania")
-            includeGroup("vazkii.patchouli")
         }
     }
 
@@ -76,7 +71,7 @@ dependencies {
     modCompileOnly(variantOf(libs.mekanism) { classifier("generators") })
     modRuntimeOnly(variantOf(libs.mekanism) { classifier("all") })
 
-    modCompileOnly(libs.appbot.forge)
+    modImplementation(libs.appbot.forge)
     modRuntimeOnly(libs.botania.forge)
     modRuntimeOnly(libs.patchouli.forge)
 
@@ -91,9 +86,10 @@ dependencies {
 tasks.processResources {
     val commonProps: Map<String, *> by extra
     val forgeProps = mapOf(
-            "appmekVersion" to libs.versions.appmek.get(),
-            "loaderVersion" to libs.forge.get().version!!.substringAfter('-').substringBefore('.'),
-            "ae2VersionEnd" to libs.versions.ae2.get().substringBefore('.').toInt() + 1
+        "appmekVersion" to libs.versions.appmek.get(),
+        "loaderVersion" to libs.forge.get().version!!.substringAfter('-')
+            .substringBefore('.'),
+        "ae2VersionEnd" to libs.versions.ae2.get().substringBefore('.').toInt() + 1
     )
 
     inputs.properties(commonProps)

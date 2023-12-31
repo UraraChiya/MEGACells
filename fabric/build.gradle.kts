@@ -24,15 +24,6 @@ repositories {
     }
 
     maven {
-        name = "BlameJared"
-        url = uri("https://maven.blamejared.com")
-        content {
-            includeGroup("vazkii.botania")
-            includeGroup("vazkii.patchouli")
-        }
-    }
-
-    maven {
         name = "TerraformersMC"
         url = uri("https://maven.terraformersmc.com/")
         content {
@@ -71,16 +62,16 @@ dependencies {
     modImplementation(libs.fabric.api)
 
     modImplementation(libs.ae2.fabric)
-    modImplementation(libs.cloth.fabric)
-    modImplementation(libs.modmenu)
 
-    modCompileOnly(libs.appbot.fabric) { exclude(group = "dev.emi", module = "emi-fabric") }
+    modImplementation(libs.appbot.fabric) { exclude(group = "dev.emi", module = "emi-fabric") }
     modRuntimeOnly(libs.botania.fabric) { exclude(group = "dev.emi", module = "emi-fabric") }
 
     // modRuntimeOnly(libs.ae2wtlib.fabric)
+    // modRuntimeOnly(libs.cloth.fabric)
 
     modRuntimeOnly(libs.jei.fabric)
     modRuntimeOnly(libs.jade.fabric)
+    modRuntimeOnly(libs.modmenu)
 }
 
 tasks {

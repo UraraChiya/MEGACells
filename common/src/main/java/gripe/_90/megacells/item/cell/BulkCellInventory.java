@@ -3,12 +3,17 @@ package gripe._90.megacells.item.cell;
 import static gripe._90.megacells.definition.MEGAItems.COMPRESSION_CARD;
 
 import java.math.BigInteger;
+import java.util.Collections;
+import java.util.Set;
+
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
 import appeng.api.config.Actionable;
+import appeng.api.crafting.IPatternDetails;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKey;
@@ -17,8 +22,9 @@ import appeng.api.storage.cells.CellState;
 import appeng.api.storage.cells.ISaveProvider;
 import appeng.api.storage.cells.StorageCell;
 
-import gripe._90.megacells.compression.CompressionChain;
-import gripe._90.megacells.compression.CompressionService;
+import gripe._90.megacells.misc.CompressionChain;
+import gripe._90.megacells.misc.CompressionService;
+import gripe._90.megacells.misc.DecompressionPattern;
 
 public class BulkCellInventory implements StorageCell {
     private static final String KEY = "key";
@@ -35,6 +41,7 @@ public class BulkCellInventory implements StorageCell {
 
     private final boolean compressionEnabled;
     private final CompressionChain compressionChain;
+    private final Set<IPatternDetails> decompressionPatterns;
     private BigInteger unitCount;
     private final BigInteger unitFactor;
 
@@ -45,18 +52,18 @@ public class BulkCellInventory implements StorageCell {
         this.container = container;
 
         var cell = (BulkCellItem) stack.getItem();
-        var filter = cell.getConfigInventory(this.stack).getKey(0);
-        filterItem = filter instanceof AEItemKey item ? item : null;
+        filterItem = (AEItemKey) cell.getConfigInventory(stack).getKey(0);
 
         storedItem = getTag().contains(KEY) ? AEItemKey.fromTag(getTag().getCompound(KEY)) : null;
         unitCount = !getTag().getString(UNIT_COUNT).isEmpty()
                 ? new BigInteger(getTag().getString(UNIT_COUNT))
                 : BigInteger.ZERO;
 
-        compressionEnabled = cell.getUpgrades(this.stack).isInstalled(COMPRESSION_CARD);
+        compressionEnabled = cell.getUpgrades(stack).isInstalled(COMPRESSION_CARD);
         compressionChain = CompressionService.INSTANCE
                 .getChain(storedItem != null ? storedItem : filterItem)
                 .orElseGet(CompressionChain::new);
+        decompressionPatterns = generateDecompressionPatterns();
         unitFactor = compressionChain.unitFactor(storedItem != null ? storedItem : filterItem);
 
         // Check newly-calculated factor against what's already recorded in order to adjust for a compression chain that
@@ -81,7 +88,7 @@ public class BulkCellInventory implements StorageCell {
 
     @Override
     public CellState getStatus() {
-        if (unitCount.signum() == 0) {
+        if (storedItem == null || unitCount.signum() < 1) {
             return CellState.EMPTY;
         }
 
@@ -108,8 +115,31 @@ public class BulkCellInventory implements StorageCell {
         return compressionEnabled;
     }
 
-    public CompressionChain getCompressionChain() {
-        return compressionChain;
+    public Set<IPatternDetails> getDecompressionPatterns() {
+        return decompressionPatterns;
+    }
+
+    private Set<IPatternDetails> generateDecompressionPatterns() {
+        if (!compressionEnabled || compressionChain.isEmpty()) {
+            return Set.of();
+        }
+
+        var decompressionChain = new CompressionChain();
+        decompressionChain.addAll(compressionChain);
+        Collections.reverse(decompressionChain);
+
+        var patterns = new ObjectLinkedOpenHashSet<IPatternDetails>();
+
+        for (var variant : decompressionChain) {
+            if (variant == decompressionChain.get(decompressionChain.size() - 1)) {
+                continue;
+            }
+
+            var decompressed = decompressionChain.get(decompressionChain.indexOf(variant) + 1);
+            patterns.add(new DecompressionPattern(decompressed.item(), variant));
+        }
+
+        return Collections.unmodifiableSet(patterns);
     }
 
     @Override
@@ -225,13 +255,13 @@ public class BulkCellInventory implements StorageCell {
         if (storedItem != null) {
             if (compressionEnabled && storedItem.equals(filterItem) && !compressionChain.isEmpty()) {
                 var count = unitCount;
-                var chain = compressionChain.limited().lastMultiplierSwapped();
+                var chain = compressionChain.lastMultiplierSwapped();
 
                 for (var variant : chain) {
                     var compressionFactor = BigInteger.valueOf(variant.factor());
                     var key = variant.item();
 
-                    if (count.divide(compressionFactor).signum() == 1 && variant != chain.last()) {
+                    if (count.divide(compressionFactor).signum() == 1 && variant != chain.get(chain.size() - 1)) {
                         out.add(key, count.remainder(compressionFactor).longValue());
                         count = count.divide(compressionFactor);
                     } else {

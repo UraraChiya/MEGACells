@@ -1,4 +1,4 @@
-package gripe._90.megacells.compression;
+package gripe._90.megacells.item;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -9,6 +9,7 @@ import appeng.api.stacks.AEItemKey;
 import appeng.crafting.pattern.EncodedPatternItem;
 
 import gripe._90.megacells.MEGACells;
+import gripe._90.megacells.misc.DecompressionPattern;
 
 public class DecompressionPatternItem extends EncodedPatternItem {
     public DecompressionPatternItem(Properties properties) {
@@ -31,8 +32,7 @@ public class DecompressionPatternItem extends EncodedPatternItem {
         try {
             return new DecompressionPattern(what);
         } catch (Exception e) {
-            MEGACells.LOGGER.warn(
-                    "Could not decode an invalid decompression pattern %s: %s".formatted(what.getTag(), e));
+            MEGACells.LOGGER.warn("Could not decode invalid decompression pattern %s: %s".formatted(what.getTag(), e));
             return null;
         }
     }
